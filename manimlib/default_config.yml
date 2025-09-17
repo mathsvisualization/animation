@@ -17,13 +17,14 @@ directories:
   # to render videos and to look for svg/png assets. This
   # will specify where those assets live, with a base directory,
   # and various subdirectory names within it
-  base: ""
+  base: "D:/cs/"
   subdirs:
     # Where should manim output video and image files?
     output: "videos"
     # If you want to use images, manim will look to these folders to find them
-    raster_images: "raster_images"
-    vector_images: "vector_images"
+    raster_images: "images/raster"
+    vector_images: "images/vector"
+    pi_creature_images: "images/pi_creature/svg"
     # If you want to use sounds, manim will look here to find it.
     sounds: "sounds"
     # Place for other forms of data relevant to any projects, like csv's
@@ -34,7 +35,7 @@ directories:
   # to file to prevent the need to re-compute, e.g. recompiling the latex. By default,
   # it stores this saved data to whatever directory appdirs.user_cache_dir("manim") returns,
   # but here a user can specify a different cache location
-  cache: ""
+  cache: "D:/project/cahce"
 window:
   # The position of window on screen. UR -> Upper Right, and likewise DL -> Down and Left,
   # UO would be upper middle, etc.
@@ -48,7 +49,7 @@ window:
   # size: (1920, 1080)  # Specific size, in pixels
 camera:
   resolution: (1920, 1080)
-  background_color: "#333333"
+  background_color: "#000000"
   fps: 30
   background_opacity: 1.0
 file_writer:
@@ -57,7 +58,7 @@ file_writer:
   # Parameters to pass into ffmpeg
   video_codec: "libx264"
   pixel_format: "yuv420p"
-  saturation: 1.0
+  saturation: 1.5
   gamma: 1.0
 # Most of the scene configuration will come from CLI arguments,
 # but defaults can be set here
@@ -80,12 +81,11 @@ tex:
   # See tex_templates.yml
   template: "default"
 text:
-  # font: "Cambria Math"
-  font: "Consolas"
-  alignment: "LEFT"
+  font: "CMU Serif"
+  alignment: "CENTER"
 embed:
   exception_mode: "Verbose"
-  autoreload: False
+  autoreload: True
 resolution_options:
   # When the user passes in -l, -m, --hd or --uhd, these are the corresponding
   # resolutions
@@ -180,5 +180,5 @@ colors:
   pure_blue: "#0000FF"
 # Can be DEBUG / INFO / WARNING / ERROR / CRITICAL
 log_level: "INFO"
-universal_import_line: "from manimlib import *"
-ignore_manimlib_modules_on_reload: True
+universal_import_line: "from manim_imports_ext import *"
+ignore_manimlib_modules_on_reload: False

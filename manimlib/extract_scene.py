@@ -146,9 +146,9 @@ def get_indent(code_lines: list[str], line_number: int) -> str:
 
 def insert_embed_line_to_module(module: Module, run_config: Dict) -> None:
     """
-    Smarter embed injection:
-    Instead of trusting raw line numbers, locate the correct Scene class
-    and insert `self.embed()` inside its construct() method.
+    Smarter embed injection with debug fallback:
+    Locate the correct Scene class and insert `self.embed()` inside its construct() method.
+    Retains original debug fallback if no class is found.
     """
     source = inspect.getsource(module)
     lines = source.splitlines(keepends=True)
@@ -184,10 +184,26 @@ def insert_embed_line_to_module(module: Module, run_config: Dict) -> None:
 
     # Update scene name if not provided
     if not run_config.get("scene_names"):
+        # Try AST method first
+        scene_found = False
         for node in tree.body:
             if isinstance(node, ast.ClassDef):
                 run_config.update(scene_names=[node.name])
+                scene_found = True
                 break
+
+        if not scene_found:
+            classes = list(filter(lambda line: line.strip().startswith("class"), lines[:run_config.get("embed_line", 0)]))
+            if classes:
+                scene_name = re.search(r"(\w+)\(", classes[-1])
+                if scene_name:
+                    run_config.update(scene_names=[scene_name.group(1)])
+                else:
+                    import logging
+                    logging.error(f"No valid class name found above line {run_config.get('embed_line')}")
+            else:
+                import logging
+                logging.error(f"No 'class' found above line {run_config.get('embed_line')}!")
 
     # Execute patched code
     code_object = compile(new_code, module.__name__, "exec")

@@ -183,5 +183,5 @@ colors:
   pure_blue: "#0000FF"
 # Can be DEBUG / INFO / WARNING / ERROR / CRITICAL
 log_level: "INFO"
-universal_import_line: "from manim_imports_ext import *"
+universal_import_line: "from manimlib import *"
 ignore_manimlib_modules_on_reload: False

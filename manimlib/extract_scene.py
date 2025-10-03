@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import copy
 import inspect
-import ast
 import sys
+
+import re
 
 from manimlib.module_loader import ModuleLoader
 
@@ -144,71 +145,88 @@ def get_indent(code_lines: list[str], line_number: int) -> str:
     return n_spaces * " "
 
 
-def insert_embed_line_to_module(module: Module, run_config: Dict) -> None:
+def find_enclosing_class(
+    lines: list[str], insert_line: int
+) -> tuple[str, int] | None:
     """
-    Smarter embed injection with debug fallback:
-    Locate the correct Scene class and insert `self.embed()` inside its construct() method.
-    Retains original debug fallback if no class is found.
+    Backtrack from `insert_line` to locate the nearest enclosing
+    `class Name(` definition.
+
+    Returns:
+      (class_name, class_def_line_index) if found, else None.
     """
-    source = inspect.getsource(module)
-    lines = source.splitlines(keepends=True)
+    for i in range(insert_line, -1, -1):
+        stripped = lines[i].strip()
+        if stripped.startswith("class ") and "(" in stripped:
+            match = re.match(r"class (\w+)\(", stripped)
+            if match:
+                return match.group(1), i
+    return None
 
-    # Find target class name
-    target_class = None
-    if run_config.get("scene_names"):
-        target_class = run_config["scene_names"][0]
 
-    tree = ast.parse(source)
-    insert_at = None
+def insert_embed_line_to_module(module: ModuleType, run_config: Dict) -> None:
+    """
+    A clever hack for live-patching ManimGL scenes by injecting a `self.embed()`
+    call at runtime. This module-level doc highlights that we're doing something
+    ingenious yet pragmatic: adjusting for shifting source lines, backtracking to
+    the correct class, and re-compiling the module on the fly.
 
-    # Find construct() inside the target class
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef) and (target_class is None or node.name == target_class):
-            for subnode in node.body:
-                if isinstance(subnode, ast.FunctionDef) and subnode.name == "construct":
-                    insert_at = subnode.lineno
-                    break
-        if insert_at:
-            break
+    Dynamically injects `self.embed()` into the user's InteractiveScene subclass.
 
-    if insert_at:
-        # Insert self.embed() indented properly
-        indent = " " * 8  # Class + def (4 spaces each)
-        lines.insert(insert_at, f"{indent}self.embed()\n")
-    elif run_config.get("embed_line"):
-        # fallback: old style
-        indent = " " * 4
-        lines.insert(run_config["embed_line"], indent + "self.embed()\n")
+    This function:
+      1. Reads the current source lines of `module`.
+      2. Computes how far the file has shifted since last insertion.
+      3. Backtracks to identify the correct class definition.
+      4. Inserts `self.embed()` at the adjusted line with proper indentation.
+      5. Updates `run_config` so subsequent reloads keep patching the right spot.
+      6. Recompiles and execs the modified source to live-patch the module.
 
-    new_code = "".join(lines)
+    Arguments:
+      module:     The already‐imported Python module object containing scene classes.
+      run_config: A dict that must include:
+                    - "embed_line":   The last insertion index (int).
+                    - "last_source_len": Previous source length to compute shifts.
+                    - Optionally "scene_names" and "original_class_lines" to track context.
 
-    # Update scene name if not provided
-    if not run_config.get("scene_names"):
-        # Try AST method first
-        scene_found = False
-        for node in tree.body:
-            if isinstance(node, ast.ClassDef):
-                run_config.update(scene_names=[node.name])
-                scene_found = True
-                break
+    Raises:
+      ValueError: If the function cannot locate an enclosing class.
+    """
+    source_lines = inspect.getsource(module).splitlines()
 
-        if not scene_found:
-            classes = list(filter(lambda line: line.strip().startswith("class"), lines[:run_config.get("embed_line", 0)]))
-            if classes:
-                scene_name = re.search(r"(\w+)\(", classes[-1])
-                if scene_name:
-                    run_config.update(scene_names=[scene_name.group(1)])
-                else:
-                    import logging
-                    logging.error(f"No valid class name found above line {run_config.get('embed_line')}")
-            else:
-                import logging
-                logging.error(f"No 'class' found above line {run_config.get('embed_line')}!")
+    # Get our last-known insertion line & adjust for any shifts
+    embed_line = run_config.embed_line
+    delta       = len(source_lines) - run_config.get("last_source_len", len(source_lines))
+    # Ensure insert_line is within [0 .. len(source_lines)-1]
+    max_index   = len(source_lines) - 1
+    insert_line = max(0, min(embed_line + delta, max_index))
 
-    # Execute patched code
-    code_object = compile(new_code, module.__name__, "exec")
-    exec(code_object, module.__dict__)
+    # TODO: validate that insert_line is within [0..len(source_lines)-1] to prevent out-of-bounds errors
+    if insert_line >= len(source_lines):
+        raise ValueError(
+            f"Computed insert_line {insert_line} > source length {len(source_lines)}"
+        )
 
+
+    # Identify which class we're actually inside
+    found = find_enclosing_class(source_lines, insert_line)
+    if not found:
+        raise ValueError("Could not locate enclosing class for insertion.")
+    target_class, class_def_line = found
+
+    # Update run_config
+    run_config["scene_names"]           = [target_class]
+    run_config["original_class_lines"]  = {target_class: class_def_line}
+    run_config["last_source_len"]       = len(source_lines)
+
+    # Inject self.embed() at the adjusted line
+    indent = source_lines[insert_line][:len(source_lines[insert_line]) - len(source_lines[insert_line].lstrip())]
+    source_lines.insert(insert_line, indent + "self.embed()")
+    run_config["embed_line"] = insert_line
+
+    # Recompile & overwrite module in place
+    new_code = "\n".join(source_lines)
+    code_obj = compile(new_code, module.__name__, "exec")
+    exec(code_obj, module.__dict__)
 
 def get_module(run_config: Dict) -> Module:
     module = ModuleLoader.get_module(run_config.file_name, run_config.is_reload)

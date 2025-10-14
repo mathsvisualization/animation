@@ -402,7 +402,7 @@ class VMobject(Mobject):
 
     def set_scale_stroke_with_zoom(self, scale_stroke_with_zoom: bool = True, recurse: bool = True) -> Self:
         self.set_uniform(recurse, scale_stroke_with_zoom=float(scale_stroke_with_zoom))
-        pass
+        return self
 
     def get_scale_stroke_with_zoom(self) -> bool:
         return self.uniforms["flat_stroke"] == 1.0

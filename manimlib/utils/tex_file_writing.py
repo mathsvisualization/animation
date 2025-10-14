@@ -94,7 +94,7 @@ def full_tex_to_svg(full_tex: str, compiler: str = "latex", message: str = ""):
         raise NotImplementedError(f"Compiler '{compiler}' is not implemented")
 
     # Use the custom LaTeX cache directory from the config
-    temp_dir = Path(manim_config.directories.latex_cache)
+    temp_dir = Path(manim_config.directories.cache)
     temp_dir.mkdir(exist_ok=True) # Create the directory if it does not already exist
 
     # Define paths for the intermediate TeX and DVI files

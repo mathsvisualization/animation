@@ -701,7 +701,7 @@ class Line(TipableVMobject):
             alpha = min(buff / length, 0.5)
             self.pointwise_become_partial(self, alpha, 1 - alpha)
         return self
-    
+
     def reset_points_around_ends(self) -> Self:
         self.set_points_by_ends(
             self.get_start().copy(),
@@ -1039,7 +1039,7 @@ class Arrow(Line):
     start : array_like
         Starting point of the arrow
     end : array_like
-        Ending point of the arrow 
+        Ending point of the arrow
     buff : float, optional
         Buffer distance from the start and end points. Default is MED_SMALL_BUFF.
     path_arc : float, optional

@@ -41,6 +41,7 @@ def bezier(
 
     return result
 
+
 def bezier_tangent(
     points: Sequence[float | FloatArray] | VectNArray,
     t: float
@@ -113,6 +114,7 @@ def bezier_angle(
         t = 1.0 if at_end else 0.0
     tangent = bezier_tangent(points, t)
     return np.arctan2(tangent[1], tangent[0])
+
 
 def partial_bezier_points(
     points: Sequence[Scalable],
@@ -387,7 +389,7 @@ def get_smooth_cubic_bezier_handle_points(
 
 
 def diag_to_matrix(
-    l_and_u: tuple[int, int], 
+    l_and_u: tuple[int, int],
     diag: np.ndarray
 ) -> np.ndarray:
     """

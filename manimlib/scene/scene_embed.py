@@ -109,6 +109,31 @@ class InteractiveSceneEmbed:
 
         self.shell.set_custom_exc((Exception,), custom_exc)
 
+    def validate_syntax(self, file_path: str) -> bool:
+        """
+        Validates the syntax of a Python file without executing it.
+        Returns True if syntax is valid, False otherwise.
+        Prints syntax errors to the console if found.
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                source_code = f.read()
+
+            # Use compile() to check for syntax errors without executing
+            compile(source_code, file_path, 'exec')
+            return True
+
+        except SyntaxError as e:
+            print(f"\nSyntax Error in {file_path}:")
+            print(f"  Line {e.lineno}: {e.text.strip() if e.text else ''}")
+            print(f"  {' ' * (e.offset - 1 if e.offset else 0)}^")
+            print(f"  {e.msg}")
+            return False
+
+        except Exception as e:
+            print(f"\nError reading {file_path}: {e}")
+            return False
+
     def reload_scene(self, embed_line: int | None = None) -> None:
         """
         Reloads the scene just like the `manimgl` command would do with the
@@ -132,6 +157,14 @@ class InteractiveSceneEmbed:
         `set_custom_exc` method, we cannot break out of the IPython shell by
         this means.
         """
+        # Get the current file path for syntax validation
+        current_file = self.shell.user_module.__file__
+
+        # Validate syntax before attempting reload
+        if not self.validate_syntax(current_file):
+            print("[ERROR] Reload cancelled due to syntax errors. Fix the errors and try again.")
+            return
+
         # Update the global run configuration.
         run_config = manim_config.run
         run_config.is_reload = True
@@ -164,8 +197,15 @@ class CheckpointManager:
         self.checkpoint_states: dict[str, list[tuple[Mobject, Mobject]]] = dict()
 
     def checkpoint_paste(self, shell, scene):
+        """
+        Used during interactive development to run (or re-run)
+        a block of scene code.
+
+        If the copied selection starts with a comment, this will
+        revert to the state of the scene the first time this function
+        was called on a block of code starting with that comment.
+        """
         code_string = pyperclip.paste()
-        
         lines = code_string.split('\n')
         if lines and lines[0].strip():  # First line has content
             # Find minimum indentation among non-empty lines
@@ -174,14 +214,14 @@ class CheckpointManager:
                 if line.strip():  # Non-empty line
                     indent = len(line) - len(line.lstrip())
                     min_indent = min(min_indent, indent)
-            
+
             # Only unindent if all non-empty lines have at least min_indent spaces
             if min_indent > 0:
                 can_unindent = all(
-                    not line.strip() or line.startswith(' ' * min_indent) 
+                    not line.strip() or line.startswith(' ' * min_indent)
                     for line in lines
                 )
-                
+
                 if can_unindent:
                     # Unindent all lines by min_indent spaces
                     unindented_lines = []
@@ -191,7 +231,7 @@ class CheckpointManager:
                         else:
                             unindented_lines.append(line)
                     code_string = '\n'.join(unindented_lines)
-        
+
         checkpoint_key = self.get_leading_comment(code_string)
         self.handle_checkpoint_key(scene, checkpoint_key)
         shell.run_cell(code_string)

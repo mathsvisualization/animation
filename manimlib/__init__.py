@@ -1,12 +1,6 @@
-try:
-    from importlib.metadata import version, PackageNotFoundError
-except ImportError:  # For Python <3.8 fallback
-    from importlib_metadata import version, PackageNotFoundError  # type: ignore
+import pkg_resources
 
-try:
-    __version__ = version("manimgl")
-except PackageNotFoundError:
-    __version__ = "unknown"
+__version__ = pkg_resources.get_distribution("manimgl").version
 
 from typing import TYPE_CHECKING
 
@@ -20,7 +14,6 @@ from manimlib.window import *
 from manimlib.animation.animation import *
 from manimlib.animation.composition import *
 from manimlib.animation.creation import *
-from manimlib.animation.customanimation import *
 from manimlib.animation.fading import *
 from manimlib.animation.growing import *
 from manimlib.animation.indication import *

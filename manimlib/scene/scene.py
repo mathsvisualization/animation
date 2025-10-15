@@ -831,7 +831,7 @@ class Scene(object):
     ) -> None:
         try:
             char = chr(symbol)
-        except (OverflowError, ValueError):
+        except OverflowError:
             log.warning("The value of the pressed key is too large.")
             return
 
@@ -917,11 +917,10 @@ class SceneState():
     def restore_scene(self, scene: Scene):
         scene.time = self.time
         scene.num_plays = self.num_plays
-        scene.mobjects = []
-        for mob, mob_copy in self.mobjects_to_copies.items():
-            if mob.has_updaters():
-                mob.clear_updaters()
-            scene.mobjects.append(mob.become(mob_copy))
+        scene.mobjects = [
+            mob.become(mob_copy)
+            for mob, mob_copy in self.mobjects_to_copies.items()
+        ]
 
 
 class EndScene(Exception):

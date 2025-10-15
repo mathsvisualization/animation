@@ -52,7 +52,7 @@ SubVmobjectType = TypeVar('SubVmobjectType', bound='VMobject')
 if TYPE_CHECKING:
     from typing import Callable, Tuple, Any, Optional
     from manimlib.typing import ManimColor, Vect3, Vect4, Vect3Array, Self
-    from moderngl import Context
+    from moderngl.context import Context
 
 
 class VMobject(Mobject):
@@ -407,7 +407,7 @@ class VMobject(Mobject):
 
     def set_scale_stroke_with_zoom(self, scale_stroke_with_zoom: bool = True, recurse: bool = True) -> Self:
         self.set_uniform(recurse, scale_stroke_with_zoom=float(scale_stroke_with_zoom))
-        return self
+        pass
 
     def get_scale_stroke_with_zoom(self) -> bool:
         return self.uniforms["flat_stroke"] == 1.0

@@ -42,6 +42,81 @@ def bezier(
     return result
 
 
+def bezier_tangent(
+    points: Sequence[float | FloatArray] | VectNArray,
+    t: float
+) -> FloatArray:
+    """
+    control_pts: list of control points [(x0,y0),(x1,y1),...,(xn,yn)]
+    t: parameter along the curve in [0,1]
+    Returns tangent vector as a numpy array at the specified t
+    """
+    n = len(points) - 1
+    points = np.array(points, dtype=float)
+    tangent = np.sum([
+        choose(n-1, k) * ((1-t)**(n-1-k)) * (t**k) * (points[k+1]-points[k])
+        for k in range(n)
+    ], axis=0) * n
+    return tangent
+
+
+def bezier_angle(
+    points: Sequence[float | FloatArray] | VectNArray,
+    t: float | None,
+    at_end: bool = False
+) -> float:
+    """
+    Compute the tangent angle of a Bézier curve at a given parameter value.
+
+    This function evaluates the tangent vector of an n-th degree Bézier curve
+    defined by its control points, and returns the orientation of that tangent
+    as an angle in radians (measured counterclockwise from the positive x-axis).
+
+    Parameters
+    ----------
+    points : sequence of (float, float)
+        List or array of control points defining the Bézier curve.
+        Example: [(x0, y0), (x1, y1), ..., (xn, yn)].
+    t : float or None, optional
+        Parameter along the curve in the range [0, 1].
+        - If provided, the tangent angle is computed at this parameter.
+        - If None:
+            * with ``at_end=True`` → angle is computed at the end point (t=1.0).
+            * with ``at_end=False`` → angle is computed at the start point (t=0.0).
+        Default is None.
+    at_end : bool, optional
+        If True, compute the tangent angle at the end of the curve (t=1.0).
+        If False, compute at the start (t=0.0) or at the given ``t`` value.
+        Default is False.
+
+    Returns
+    -------
+    angle : float
+        Tangent angle in radians. Use ``math.degrees(angle)`` to convert
+        to degrees if needed.
+
+    Notes
+    -----
+    - The tangent vector is computed using the derivative of the Bézier curve.
+    - The angle is obtained via ``np.arctan2(dy, dx)``, so the result lies
+      in the range [-π, π].
+
+    Examples
+    --------
+    >>> points = [(0, 0), (1, 2), (2, 0)]
+    >>> angle_start = bezier_angle(points, None, at_end=False)  # tangent at t=0
+    >>> angle_end = bezier_angle(points, None, at_end=True)     # tangent at t=1
+    >>> angle_mid = bezier_angle(points, 0.5)                   # tangent at t=0.5
+    >>> import math
+    >>> math.degrees(angle_mid)
+    0.0  # (example output in degrees)
+    """
+    if t is None:
+        t = 1.0 if at_end else 0.0
+    tangent = bezier_tangent(points, t)
+    return np.arctan2(tangent[1], tangent[0])
+
+
 def partial_bezier_points(
     points: Sequence[Scalable],
     a: float,

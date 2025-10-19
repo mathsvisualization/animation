@@ -197,15 +197,34 @@ class CheckpointManager:
         self.checkpoint_states: dict[str, list[tuple[Mobject, Mobject]]] = dict()
 
     def checkpoint_paste(self, shell, scene):
-        """
-        Used during interactive development to run (or re-run)
-        a block of scene code.
-
-        If the copied selection starts with a comment, this will
-        revert to the state of the scene the first time this function
-        was called on a block of code starting with that comment.
-        """
         code_string = pyperclip.paste()
+        
+        lines = code_string.split('\n')
+        if lines and lines[0].strip():  # First line has content
+            # Find minimum indentation among non-empty lines
+            min_indent = float('inf')
+            for line in lines:
+                if line.strip():  # Non-empty line
+                    indent = len(line) - len(line.lstrip())
+                    min_indent = min(min_indent, indent)
+            
+            # Only unindent if all non-empty lines have at least min_indent spaces
+            if min_indent > 0:
+                can_unindent = all(
+                    not line.strip() or line.startswith(' ' * min_indent) 
+                    for line in lines
+                )
+                
+                if can_unindent:
+                    # Unindent all lines by min_indent spaces
+                    unindented_lines = []
+                    for line in lines:
+                        if line.startswith(' ' * min_indent):
+                            unindented_lines.append(line[min_indent:])
+                        else:
+                            unindented_lines.append(line)
+                    code_string = '\n'.join(unindented_lines)
+        
         checkpoint_key = self.get_leading_comment(code_string)
         self.handle_checkpoint_key(scene, checkpoint_key)
         shell.run_cell(code_string)

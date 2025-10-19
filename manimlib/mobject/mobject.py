@@ -53,7 +53,7 @@ if TYPE_CHECKING:
     from typing import Callable, Iterator, Union, Tuple, Optional, Any
     import numpy.typing as npt
     from manimlib.typing import ManimColor, Vect3, Vect4Array, Vect3Array, UniformDict, Self
-    from moderngl.context import Context
+    from moderngl import Context
 
     T = TypeVar('T')
     TimeBasedUpdater = Callable[["Mobject", float], "Mobject" | None]

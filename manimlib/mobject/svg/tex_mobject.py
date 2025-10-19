@@ -208,7 +208,7 @@ class Tex(StringMobject):
     def substr_to_path_count(self, substr: str) -> int:
         tex = self.get_tex()
         if len(self) != num_tex_symbols(tex):
-            log.warning(f"Estimated size of {tex} does not match true size")
+            log.warning(f"Estimated size of does not match true size")
         return num_tex_symbols(substr)
 
     def get_symbol_substrings(self):

@@ -4,6 +4,8 @@ import copy
 import inspect
 import sys
 
+import re
+
 from manimlib.module_loader import ModuleLoader
 
 from manimlib.config import manim_config
@@ -127,20 +129,27 @@ def get_scene_classes(module: Optional[Module]):
 
 def get_indent(code_lines: list[str], line_number: int) -> str:
     """
-    Find the indent associated with a given line of python code,
-    as a string of spaces
+    Return the leading indentation to use for inserting a new line at
+    `line_number`. Preserves tabs vs spaces and adds one indent level
+    if the most recent non-empty line ends with a colon.
     """
-    # Find most recent non-empty line
+    # Find most recent non-empty line (searching upward including the given index)
     try:
-        line = next(filter(lambda line: line.strip(), code_lines[line_number - 1::-1]))
+        line = next(filter(lambda ln: ln.strip(), code_lines[line_number - 1::-1]))
     except StopIteration:
         return ""
 
-    # Either return its leading spaces, or add for if it ends with colon
-    n_spaces = len(line) - len(line.lstrip())
-    if line.endswith(":"):
-        n_spaces += 4
-    return n_spaces * " "
+    # Capture the existing leading whitespace exactly
+    m = re.match(r"^([ \t]*)", line)
+    leading = m.group(1) if m else ""
+
+    # Decide what one indent level looks like in this file: prefer tabs if used here,
+    # otherwise default to 4 spaces. If the line ends with a colon (ignoring trailing whitespace),
+    # increase by one indent level.
+    one_level = "\t" if "\t" in leading else " " * 4
+    if line.rstrip().endswith(":"):
+        return leading + one_level
+    return leading
 
 
 def insert_embed_line_to_module(module: Module, run_config: Dict) -> None:

@@ -60,6 +60,7 @@ from manimlib.mobject.three_dimensions import VCube
 from manimlib.mobject.types.vectorized_mobject import VGroup
 from manimlib.mobject.types.vectorized_mobject import VMobject
 from manimlib.mobject.svg.text_mobject import Text
+from manimlib.mobject.svg.tex_mobject import TexText
 from manimlib.utils.bezier import interpolate
 from manimlib.utils.iterables import adjacent_pairs
 from manimlib.utils.rate_functions import linear
@@ -366,6 +367,8 @@ class Bubble(VGroup):
         fill_opacity: float = 0.8,
         stroke_color: ManimColor = WHITE,
         stroke_width: float = 3.0,
+        math_mode: bool = False,
+        tex_config: dict | None = None,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -376,7 +379,14 @@ class Bubble(VGroup):
             content.set_fill(opacity=0)
             content.set_stroke(width=0)
         elif isinstance(content, str):
-            content = Text(content)
+            if math_mode:
+                if tex_config is None:
+                    tex_config = {}
+                content = TexText(content, **tex_config)
+            else:
+                if tex_config is None:
+                    tex_config = {}
+                content = Text(content, **tex_config)
         self.content = content
 
         self.body = self.get_body(content, direction, buff)
@@ -467,11 +477,20 @@ class SpeechBubble(Bubble):
         filler_shape: Tuple[float, float] = (2.0, 1.0),
         stem_height_to_bubble_height: float = 0.5,
         stem_top_x_props: Tuple[float, float] = (0.2, 0.3),
+        math_mode: bool = False,
+        tex_config: dict | None = None,
         **kwargs
     ):
         self.stem_height_to_bubble_height = stem_height_to_bubble_height
         self.stem_top_x_props = stem_top_x_props
-        super().__init__(content, buff, filler_shape, **kwargs)
+        super().__init__(
+            content=content,
+            buff=buff,
+            filler_shape=filler_shape,
+            math_mode=math_mode,
+            tex_config=tex_config,
+            **kwargs
+        )
 
     def get_body(self, content: VMobject, direction: Vect3, buff: float) -> VMobject:
         rect = SurroundingRectangle(content, buff=buff)
@@ -503,13 +522,22 @@ class ThoughtBubble(Bubble):
         bulge_overlap: float = 0.25,
         noise_factor: float = 0.1,
         circle_radii: list[float] = [0.1, 0.15, 0.2],
+        math_mode: bool = False,
+        tex_config: dict | None = None,
         **kwargs
     ):
         self.bulge_radius = bulge_radius
         self.bulge_overlap = bulge_overlap
         self.noise_factor = noise_factor
         self.circle_radii = circle_radii
-        super().__init__(content, buff, filler_shape, **kwargs)
+        super().__init__(
+            content=content,
+            buff=buff,
+            filler_shape=filler_shape,
+            math_mode=math_mode,
+            tex_config=tex_config,
+            **kwargs
+        )
 
     def get_body(self, content: VMobject, direction: Vect3, buff: float) -> VMobject:
         rect = SurroundingRectangle(content, buff)

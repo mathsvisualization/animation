@@ -29,7 +29,7 @@ class BulletedList(VGroup):
             *labelled_content,
             R"\end{itemize}"
         ])
-        tex_text = TexText(tex_string, isolate=labelled_content, **kwargs)
+        self.tex_text = tex_text = TexText(tex_string, isolate=labelled_content, **kwargs)
         lines = (tex_text.select_part(part) for part in labelled_content)
 
         super().__init__(*lines)

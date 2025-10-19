@@ -31,11 +31,12 @@ directories:
     data: "data"
     # When downloading, say an image, where will it go?
     downloads: "downloads"
+    # For storing cached LaTeX compilation results
+    cache: "latex_cache"
   # For certain object types, especially Tex and Text, manim will save information
   # to file to prevent the need to re-compute, e.g. recompiling the latex. By default,
   # it stores this saved data to whatever directory appdirs.user_cache_dir("manim") returns,
   # but here a user can specify a different cache location
-  cache: ""
 window:
   # The position of window on screen. UR -> Upper Right, and likewise DL -> Down and Left,
   # UO would be upper middle, etc.

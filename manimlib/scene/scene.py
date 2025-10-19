@@ -831,7 +831,7 @@ class Scene(object):
     ) -> None:
         try:
             char = chr(symbol)
-        except OverflowError:
+        except (OverflowError, ValueError):
             log.warning("The value of the pressed key is too large.")
             return
 

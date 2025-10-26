@@ -198,49 +198,33 @@ class CheckpointManager:
 
     def checkpoint_paste(self, shell, scene):
         code_string = pyperclip.paste()
-        if not code_string.strip():
-            print("[!] Clipboard is empty or whitespace only.")
-            return
-
-        # Normalize line endings & split into lines
-        lines = code_string.replace("\t", "    ").split('\n')
-
-        # 🔹 Remove leading and trailing empty lines
-        while lines and not lines[0].strip():
-            lines.pop(0)
-        while lines and not lines[-1].strip():
-            lines.pop()
-
-        if not lines:
-            print("[!] No valid code detected.")
-            return
-
-        # 🔹 Find minimum indentation across non-empty lines
-        min_indent = float('inf')
-        for line in lines:
-            if line.strip():
-                indent = len(line) - len(line.lstrip())
-                min_indent = min(min_indent, indent)
-
-        # 🔹 Unindent lines if all allow it
-        if min_indent > 0 and min_indent < float('inf'):
-            can_unindent = all(
-                not line.strip() or line.startswith(' ' * min_indent)
-                for line in lines
-            )
-            if can_unindent:
-                unindented_lines = []
-                for line in lines:
-                    if line.startswith(' ' * min_indent):
-                        unindented_lines.append(line[min_indent:])
-                    else:
-                        unindented_lines.append(line)
-                lines = unindented_lines
-
-        # 🔹 Join cleaned code
-        code_string = '\n'.join(lines)
-
-        # 🔹 Extract checkpoint key (comment)
+        
+        lines = code_string.split('\n')
+        if lines and lines[0].strip():  # First line has content
+            # Find minimum indentation among non-empty lines
+            min_indent = float('inf')
+            for line in lines:
+                if line.strip():  # Non-empty line
+                    indent = len(line) - len(line.lstrip())
+                    min_indent = min(min_indent, indent)
+            
+            # Only unindent if all non-empty lines have at least min_indent spaces
+            if min_indent > 0:
+                can_unindent = all(
+                    not line.strip() or line.startswith(' ' * min_indent) 
+                    for line in lines
+                )
+                
+                if can_unindent:
+                    # Unindent all lines by min_indent spaces
+                    unindented_lines = []
+                    for line in lines:
+                        if line.startswith(' ' * min_indent):
+                            unindented_lines.append(line[min_indent:])
+                        else:
+                            unindented_lines.append(line)
+                    code_string = '\n'.join(unindented_lines)
+        
         checkpoint_key = self.get_leading_comment(code_string)
         self.handle_checkpoint_key(scene, checkpoint_key)
         shell.run_cell(code_string)

@@ -20,9 +20,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Callable, Iterable, Sequence, Tuple
+    from colour import Color
 
     from manimlib.camera.camera import Camera
-    from manimlib.typing import ManimColor, Vect3, Vect3Array, Self
+    from manimlib.typing import ManimColor, Vect2, Vect3, Vect3Array, Self
 
 
 class Surface(Mobject):

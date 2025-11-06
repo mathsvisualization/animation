@@ -397,6 +397,13 @@ class Scene(object):
         return self
 
     @affects_mobject_list
+    def always_on_top(self, mob):
+        all_mobs = self.mobjects
+        max_z = max([m.get_z_index() for m in all_mobs])
+        mob.set_z_index(max_z + 1)
+        return self
+
+    @affects_mobject_list
     def clear(self):
         self.mobjects = []
         return self

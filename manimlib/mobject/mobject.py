@@ -1237,6 +1237,9 @@ class Mobject(object):
             mob.z_index = z_index
         return self
 
+    def get_z_index(self) -> int:
+        return self.z_index
+
     def space_out_submobjects(self, factor: float = 1.5, **kwargs) -> Self:
         self.scale(factor, **kwargs)
         for submob in self.submobjects:

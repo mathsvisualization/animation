@@ -20,6 +20,7 @@ from manimlib.event_handler import EVENT_DISPATCHER
 from manimlib.event_handler.event_type import EventType
 from manimlib.logger import log
 from manimlib.mobject.mobject import _AnimationBuilder
+from manimlib.animation.animation import Animation
 from manimlib.mobject.mobject import Group
 from manimlib.mobject.mobject import Mobject
 from manimlib.mobject.mobject import Point
@@ -115,6 +116,7 @@ class Scene(object):
 
         self.file_writer = SceneFileWriter(self, **self.file_writer_config)
         self.mobjects: list[Mobject] = [self.camera.frame]
+        self.foreground_mobjects: List[Mobject] = []
         self.render_groups: list[Mobject] = []
         self.id_to_mobject_map: dict[int, Mobject] = dict()
         self.num_plays: int = 0
@@ -330,8 +332,9 @@ class Scene(object):
         Mobjects will be displayed, from background to
         foreground in the order with which they are added.
         """
-        self.remove(*new_mobjects)
+        self.remove(*new_mobjects, foreground_mobject=False)
         self.mobjects += new_mobjects
+        self.mobjects += self.foreground_mobjects
 
         # Reorder based on z_index
         id_to_scene_order = {id(m): idx for idx, m in enumerate(self.mobjects)}
@@ -357,6 +360,15 @@ class Scene(object):
         return self
 
     @affects_mobject_list
+    def add_foreground_mobject(self, mobject):
+        self.add_foreground_mobjects(mobject)
+
+    @affects_mobject_list
+    def add_foreground_mobjects(self, *mobjects):
+        self.foreground_mobjects += list(mobjects)
+        self.add(*mobjects)
+
+    @affects_mobject_list
     def replace(self, mobject: Mobject, *replacements: Mobject):
         if mobject in self.mobjects:
             index = self.mobjects.index(mobject)
@@ -368,7 +380,7 @@ class Scene(object):
         return self
 
     @affects_mobject_list
-    def remove(self, *mobjects_to_remove: Mobject):
+    def remove(self, *mobjects_to_remove: Mobject, foreground_mobject: bool = True):
         """
         Removes anything in mobjects from scenes mobject list, but in the event that one
         of the items to be removed is a member of the family of an item in mobject_list,
@@ -377,6 +389,8 @@ class Scene(object):
         For example, if the scene includes Group(m1, m2, m3), and we call scene.remove(m1),
         the desired behavior is for the scene to then include m2 and m3 (ungrouped).
         """
+        if foreground_mobject:
+            self.remove_foreground_mobjects(*mobjects_to_remove)
         to_remove = set(extract_mobject_family_members(mobjects_to_remove))
         new_mobjects, _ = recursive_mobject_remove(self.mobjects, to_remove)
         self.mobjects = new_mobjects
@@ -385,6 +399,16 @@ class Scene(object):
     def remove_all_except(self, *mobjects_to_keep : Mobject):
         self.clear()
         self.add(*mobjects_to_keep)
+
+    @affects_mobject_list
+    def remove_foreground_mobject(self, mobject):
+        self.remove_foreground_mobjects(mobject)
+
+    @affects_mobject_list
+    def remove_foreground_mobjects(self, *mobjects):
+        for mob in mobjects:
+            if mob in self.foreground_mobjects:
+                self.foreground_mobjects.remove(mob)
 
     def bring_to_front(self, *mobjects: Mobject):
         self.add(*mobjects)
@@ -584,6 +608,7 @@ class Scene(object):
         if len(proto_animations) == 0:
             log.warning("Called Scene.play with no animations")
             return
+        proto_animations += tuple(map(Animation, self.foreground_mobjects))
         animations = list(map(prepare_animation, proto_animations))
         for anim in animations:
             anim.update_rate_info(run_time, rate_func, lag_ratio)
@@ -884,11 +909,15 @@ class SceneState():
         self.time = scene.time
         self.num_plays = scene.num_plays
         self.mobjects_to_copies = OrderedDict.fromkeys(scene.mobjects)
+        self.foreground_to_copies = OrderedDict.fromkeys(scene.foreground_mobjects)
         if ignore:
             for mob in ignore:
                 self.mobjects_to_copies.pop(mob, None)
+                self.foreground_to_copies.pop(mob, None)
 
-        last_m2c = scene.undo_stack[-1].mobjects_to_copies if scene.undo_stack else dict()
+        last_state = scene.undo_stack[-1] if scene.undo_stack else None
+        last_m2c = last_state.mobjects_to_copies if last_state else dict()
+        last_f2c = last_state.foreground_to_copies if last_state else dict()
         for mob in self.mobjects_to_copies:
             # If it hasn't changed since the last state, just point to the
             # same copy as before
@@ -896,22 +925,37 @@ class SceneState():
                 self.mobjects_to_copies[mob] = last_m2c[mob]
             else:
                 self.mobjects_to_copies[mob] = mob.copy()
+        for mob in self.foreground_to_copies:
+            # If it hasn't changed since the last state, just point to the
+            # same copy as before
+            if mob in last_f2c and last_f2c[mob].looks_identical(mob):
+                self.foreground_to_copies[mob] = last_f2c[mob]
+            else:
+                self.foreground_to_copies[mob] = mob.copy()
 
     def __eq__(self, state: SceneState):
         return all((
             self.time == state.time,
             self.num_plays == state.num_plays,
-            self.mobjects_to_copies == state.mobjects_to_copies
+            self.mobjects_to_copies == state.mobjects_to_copies,
+            self.foreground_to_copies == state.foreground_to_copies
         ))
 
     def mobjects_match(self, state: SceneState):
-        return self.mobjects_to_copies == state.mobjects_to_copies
+        return (
+            self.mobjects_to_copies == state.mobjects_to_copies and
+            self.foreground_to_copies == state.foreground_to_copies
+        )
 
     def n_changes(self, state: SceneState):
         m2c = state.mobjects_to_copies
+        f2c = state.foreground_to_copies
         return sum(
             1 - int(mob in m2c and mob.looks_identical(m2c[mob]))
             for mob in self.mobjects_to_copies
+        ) + sum(
+            1 - int(mob in f2c and mob.looks_identical(f2c[mob]))
+            for mob in self.foreground_to_copies
         )
 
     def restore_scene(self, scene: Scene):
@@ -922,6 +966,11 @@ class SceneState():
             if mob.has_updaters():
                 mob.clear_updaters()
             scene.mobjects.append(mob.become(mob_copy))
+        scene.foreground_mobjects = []
+        for mob, mob_copy in self.foreground_to_copies.items():
+            if mob.has_updaters():
+                mob.clear_updaters()
+            scene.foreground_mobjects.append(mob.become(mob_copy))
 
 
 class EndScene(Exception):

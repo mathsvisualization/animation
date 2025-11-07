@@ -977,6 +977,9 @@ class VMobject(Mobject):
             mob.get_joint_angles()
         return self
 
+    def get_num_anchor_points(self):
+        return (self.get_num_points() - 1) // 3 + 1
+
     def insert_n_curves(self, n: int, recurse: bool = True) -> Self:
         for mob in self.get_family(recurse):
             if mob.get_num_curves() > 0:

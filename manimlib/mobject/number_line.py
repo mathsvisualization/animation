@@ -53,6 +53,7 @@ class NumberLine(Line):
             font_size=36,
         ),
         numbers_to_exclude: list | None = None,
+        leftmost_tick: float | None = None,
         **kwargs,
     ):
         self.x_range = x_range
@@ -73,9 +74,13 @@ class NumberLine(Line):
         self.tip_config = dict(tip_config)
         self.decimal_number_config = dict(decimal_number_config)
         self.numbers_to_exclude = numbers_to_exclude
+        self.leftmost_tick = leftmost_tick
 
         self.x_min, self.x_max = x_range[:2]
         self.x_step = 1 if len(x_range) == 2 else x_range[2]
+
+        if self.leftmost_tick is None:
+            self.leftmost_tick = self.x_step * np.ceil(self.x_min / self.x_step)
 
         super().__init__(
             self.x_min * RIGHT, self.x_max * RIGHT,
@@ -106,7 +111,7 @@ class NumberLine(Line):
             x_max = self.x_max
         else:
             x_max = self.x_max + self.x_step
-        result = np.arange(self.x_min, x_max, self.x_step)
+        result = np.arange(self.leftmost_tick, x_max, self.x_step)
         return result[result <= self.x_max]
 
     def add_ticks(self) -> None:

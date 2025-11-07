@@ -68,6 +68,7 @@ from manimlib.scene.scene import *
 
 from manimlib.utils.bezier import *
 from manimlib.utils.cache import *
+from manimlib.utils.config_ops import *
 from manimlib.utils.color import *
 from manimlib.utils.dict_ops import *
 from manimlib.utils.debug import *

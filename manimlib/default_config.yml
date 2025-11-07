@@ -12,12 +12,13 @@ directories:
   # Set this to true if you want the path to video files
   # to match the directory structure of the path to the
   # source code generating that video
-  mirror_module_path: False
+  mirror_module_path: True
+  removed_mirror_prefix: "D:\\cs\\videos\\"
   # Manim may write to and read from the file system, e.g.
   # to render videos and to look for svg/png assets. This
   # will specify where those assets live, with a base directory,
   # and various subdirectory names within it
-  base: "D:/cs/"
+  base: "C:\\Users\\Grant Sanderson\\Dropbox\\3Blue1Brown\\"
   subdirs:
     # Where should manim output video and image files?
     output: "videos"
@@ -73,11 +74,11 @@ scene:
   default_wait_time: 1.0
 vmobject:
   default_stroke_width: 4.0
-  default_stroke_color: "#DDDDDD"     # Default is GREY_A
-  default_fill_color: "#888888"       # Default is GREY_C
+  default_stroke_color: "#DDDDDD"     # Default is GREY_A (#DDDDDD)
+  default_fill_color: "#888888"       # Default is GREY_C (#888888)
 mobject:
-  default_mobject_color: "#FFFFFF"    # Default is WHITE
-  default_light_color: "#BBBBBB"      # Default is GREY_B
+  default_mobject_color: "#FFFFFF"    # Default is WHITE (#FFFFFF)
+  default_light_color: "#BBBBBB"      # Default is GREY_B (#BBBBBB)
 tex:
   # See tex_templates.yml
   template: "default"

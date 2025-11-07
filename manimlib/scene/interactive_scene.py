@@ -242,8 +242,8 @@ class InteractiveScene(Scene):
         super().add(*mobjects)
         self.regenerate_selection_search_set()
 
-    def remove(self, *mobjects: Mobject):
-        super().remove(*mobjects)
+    def remove(self, *mobjects: Mobject, foreground_mobject=True):
+        super().remove(*mobjects, foreground_mobject=foreground_mobject)
         self.regenerate_selection_search_set()
 
     def remove_all_except(self, *mobjects_to_keep : Mobject):

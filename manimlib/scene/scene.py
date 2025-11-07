@@ -332,7 +332,7 @@ class Scene(object):
         Mobjects will be displayed, from background to
         foreground in the order with which they are added.
         """
-        self.remove(*new_mobjects)
+        self.remove(*new_mobjects, foreground_mobject=False)
         self.mobjects += new_mobjects
         self.mobjects += self.foreground_mobjects
 
@@ -380,7 +380,7 @@ class Scene(object):
         return self
 
     @affects_mobject_list
-    def remove(self, *mobjects_to_remove: Mobject):
+    def remove(self, *mobjects_to_remove: Mobject, foreground_mobject: bool = True):
         """
         Removes anything in mobjects from scenes mobject list, but in the event that one
         of the items to be removed is a member of the family of an item in mobject_list,
@@ -389,6 +389,8 @@ class Scene(object):
         For example, if the scene includes Group(m1, m2, m3), and we call scene.remove(m1),
         the desired behavior is for the scene to then include m2 and m3 (ungrouped).
         """
+        if foreground_mobject:
+            self.remove_foreground_mobjects(*mobjects_to_remove)
         to_remove = set(extract_mobject_family_members(mobjects_to_remove))
         new_mobjects, _ = recursive_mobject_remove(self.mobjects, to_remove)
         self.mobjects = new_mobjects
